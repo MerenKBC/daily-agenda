@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Günlük Analiz & Ajanda</title>
+    <!-- Chart.js via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --secondary: #a855f7;
+            --bg: #0f172a;
+            --glass: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text: #f8fafc;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg);
+            background-image:
+                radial-gradient(at 0% 0%, hsla(253, 16%, 7%, 1) 0, transparent 50%),
+                radial-gradient(at 50% 0%, hsla(225, 39%, 30%, 1) 0, transparent 50%),
+                radial-gradient(at 100% 0%, hsla(339, 49%, 30%, 1) 0, transparent 50%);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            display: grid;
+            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        }
+
+        .card {
+            background: var(--glass);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: transform 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+        }
+
+        h1,
+        h2 {
+            margin: 0 0 15px 0;
+            font-weight: 600;
+        }
+
+        h1 {
+            font-size: 2rem;
+            background: linear-gradient(to right, #818cf8, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 5px;
+        }
+
+        .date-display {
+            color: #94a3b8;
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+        }
+
+        /* Input Section */
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        input {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border);
+            color: white;
+            padding: 12px;
+            border-radius: 12px;
+            width: 100%;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+        }
+
+        button {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: opacity 0.2s;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        /* Stats */
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 10px 0;
+        }
+
+        .stat-label {
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 999px;
+            height: 10px;
+            margin-top: 15px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #38bdf8, #818cf8);
+            width: 0%;
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Layout specific */
+        .header-card {
+            grid-column: 1 / -1;
+            text-align: center;
+        }
+
+        canvas {
+            max-height: 250px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <!-- Header -->
+        <div class="card header-card" style="position: relative;">
+            <h1>Günlük Analiz</h1>
+            <div class="date-display" id="currentDate"></div>
+            <button onclick="openModal()"
+                style="position: absolute; top: 20px; right: 20px; padding: 10px 15px; font-size: 1.2rem; border-radius: 50%; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center;">+</button>
+        </div>
+
+        <!-- Tracker Cards Area -->
+        <div id="trackerContainer" style="display: contents;">
+            <!-- Cards will be injected here -->
+        </div>
+
+        <!-- Bar Chart: Today's Status -->
+        <div class="card">
+            <h2>Anlık Durum (Hedef vs. Yapılan)</h2>
+            <canvas id="dailyBarChart"></canvas>
+        </div>
+
+        <!-- Line Chart: History -->
+        <div class="card" style="grid-column: 1 / -1;">
+            <h2>📈 Haftalık/Günlük Analiz</h2>
+            <canvas id="historyLineChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Add New Tracker Modal -->
+    <div id="addModal"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center;">
+        <div class="card" style="width: 300px; background: #1e293b;">
+            <h2>Yeni Takip Ekle</h2>
+            <input type="text" id="newTrackerName" placeholder="Adı (örn: Kitap)" style="margin-bottom: 10px;">
+            <input type="text" id="newTrackerUnit" placeholder="Birim (örn: Sayfa)" style="margin-bottom: 10px;">
+            <input type="number" id="newTrackerTarget" placeholder="Günlük Hedef" style="margin-bottom: 10px;">
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button onclick="addTracker()" style="flex: 1;">Ekle</button>
+                <button onclick="closeModal()" style="flex: 1; background: #475569;">İptal</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let appData = {
+            currentDate: new Date().toDateString(),
+            // Default tracker
+            trackers: [
+                {
+                    id: 'water',
+                    name: 'Su Takibi',
+                    unit: 'Litre',
+                    target: 4,
+                    current: 0,
+                    history: [] // { date: string, value: number }
+                }
+            ]
+        };
+
+        // DOM Elements
+        const trackerContainer = document.getElementById('trackerContainer');
+        const modal = document.getElementById('addModal');
+        let barChart;
+        let lineChart;
+
+        // --- Initialization ---
+        function init() {
+            loadData();
+            checkNewDay();
+            renderTrackers();
+            initCharts();
+            updateCharts();
+        }
+
+        // --- Logic ---
+        function loadData() {
+            const saved = localStorage.getItem('dailyAgendaData_v2');
+            if (saved) {
+                appData = JSON.parse(saved);
+            } else {
+                // Migration V1 -> V2 logic (simple attempt)
+                const v1 = localStorage.getItem('dailyAgendaData_v1');
+                if (v1) {
+                    try {
+                        const oldData = JSON.parse(v1);
+                        appData.trackers[0].current = oldData.dailyWater || 0;
+                        appData.trackers[0].history = oldData.history || [];
+                        appData.currentDate = oldData.currentDate;
+                    } catch (e) { console.error("Migration failed", e); }
+                }
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem('dailyAgendaData_v2', JSON.stringify(appData));
+        }
+
+        function checkNewDay() {
+            const today = new Date().toDateString();
+            if (appData.currentDate !== today) {
+                // Archive logic for ALL trackers
+                appData.trackers.forEach(t => {
+                    t.history.push({
+                        date: appData.currentDate,
+                        value: t.current
+                    });
+                    t.current = 0; // Reset for new day
+                });
+
+                appData.currentDate = today;
+                saveData();
+            }
+            document.getElementById('currentDate').textContent = new Date().toLocaleDateString('tr-TR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        }
+
+        // --- Dynamic Tracker UI ---
+        function renderTrackers() {
+            trackerContainer.innerHTML = '';
+            appData.trackers.forEach((tracker, index) => {
+                const percentage = Math.min((tracker.current / tracker.target) * 100, 100);
+
+                // Calculate Weekly Average
+                // Use last 7 items from history + maybe today? Let's use pure history for accurate "past" analysis or combine.
+                // Request is "Weekly average", usually implies past performance. 
+                // Let's take last 6 days + today.
+                let historyVals = tracker.history.map(h => h.value);
+                const allVals = [...historyVals, tracker.current]; // Include today for dynamic average
+
+                // Take last 7
+                const last7Days = allVals.slice(-7);
+                const sum = last7Days.reduce((a, b) => a + b, 0);
+                const avg = last7Days.length > 0 ? (sum / last7Days.length).toFixed(1) : 0;
+
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <h2>${tracker.name}</h2>
+                        <button onclick="removeTracker(${index})" style="background:none; color:#dc2626; padding:5px; font-size:0.8rem;">Sil</button>
+                    </div>
+                    <div class="input-group">
+                        <input type="number" id="input-${index}" placeholder="Miktar" step="1">
+                        <button onclick="updateTracker(${index})">Ekle</button>
+                    </div>
+                    
+                    <div class="stat-value">${tracker.current} <span style="font-size:1rem;color:#94a3b8;">${tracker.unit}</span></div>
+                    <div style="display:flex; justify-content:space-between; font-size:0.9rem; color:#94a3b8;">
+                        <span>Hedef: ${tracker.target} ${tracker.unit}</span>
+                        <span>Ortalama (7 gün): ${avg}</span>
+                    </div>
+                    
+                    <div class="progress-container">
+                        <div class="progress-bar" style="width: ${percentage}%; background: hsl(${index * 60 + 200}, 70%, 60%);"></div>
+                    </div>
+                `;
+                trackerContainer.appendChild(card);
+            });
+        }
+
+        function updateTracker(index) {
+            const input = document.getElementById(`input-${index}`);
+            const val = parseFloat(input.value);
+            if (!val || val <= 0) return;
+
+            appData.trackers[index].current += val;
+            // Round to avoid float issues
+            appData.trackers[index].current = Math.round(appData.trackers[index].current * 100) / 100;
+
+            input.value = '';
+            saveData();
+            renderTrackers();
+            updateCharts();
+        }
+
+        function addTracker() {
+            const name = document.getElementById('newTrackerName').value;
+            const unit = document.getElementById('newTrackerUnit').value;
+            const target = parseFloat(document.getElementById('newTrackerTarget').value);
+
+            if (name && target) {
+                appData.trackers.push({
+                    id: Date.now().toString(),
+                    name: name,
+                    unit: unit || 'Birim',
+                    target: target,
+                    current: 0,
+                    history: []
+                });
+                saveData();
+                renderTrackers();
+                updateCharts(); // Re-init charts to include new dataset
+                closeModal();
+                // Clear inputs
+                document.getElementById('newTrackerName').value = '';
+                document.getElementById('newTrackerTarget').value = '';
+                document.getElementById('newTrackerUnit').value = '';
+            }
+        }
+
+        function removeTracker(index) {
+            if (confirm('Bu takibi silmek istediğinize emin misiniz?')) {
+                appData.trackers.splice(index, 1);
+                saveData();
+                renderTrackers();
+                updateCharts();
+            }
+        }
+
+        // --- Modal Control ---
+        function openModal() { modal.style.display = 'flex'; }
+        function closeModal() { modal.style.display = 'none'; }
+
+        // --- Charts ---
+        function initCharts() {
+            if (barChart) barChart.destroy();
+            if (lineChart) lineChart.destroy();
+
+            const ctxBar = document.getElementById('dailyBarChart').getContext('2d');
+            barChart = new Chart(ctxBar, {
+                type: 'bar',
+                data: { labels: [], datasets: [] },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: { beginAtZero: true, max: 100, title: { display: true, text: 'Tamamlanma (%)' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            const ctxLine = document.getElementById('historyLineChart').getContext('2d');
+            lineChart = new Chart(ctxLine, {
+                type: 'line',
+                data: { labels: [], datasets: [] },
+                options: {
+                    responsive: true,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: { tooltip: { mode: 'index', intersect: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } },
+                        x: { grid: { color: 'rgba(255,255,255,0.05)' } }
+                    }
+                }
+            });
+        }
+
+        function updateCharts() {
+            const getColor = (i) => `hsl(${i * 60 + 200}, 70%, 60%)`;
+
+            // Bar Chart
+            barChart.data.labels = appData.trackers.map(t => t.name);
+            barChart.data.datasets = [{
+                label: 'Tamamlanma Oranı (%)',
+                data: appData.trackers.map(t => Math.min((t.current / t.target) * 100, 100)),
+                backgroundColor: appData.trackers.map((_, i) => getColor(i)),
+                borderRadius: 8
+            }];
+            barChart.update();
+
+            // Line Chart (Weekly View)
+            const allDates = new Set();
+            appData.trackers.forEach(t => {
+                t.history.forEach(h => allDates.add(h.date));
+            });
+            allDates.add(appData.currentDate);
+
+            // Sort and take last 7
+            let sortedDates = Array.from(allDates).sort((a, b) => new Date(a) - new Date(b));
+            if (sortedDates.length > 7) {
+                sortedDates = sortedDates.slice(-7);
+            }
+
+            // Format labels with Day Name
+            const dayNames = ['Pz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
+            lineChart.data.labels = sortedDates.map(dStr => {
+                if (dStr === appData.currentDate) return 'Bugün';
+                const date = new Date(dStr);
+                return `${dayNames[date.getDay()]} (${date.getDate()}/${date.getMonth() + 1})`;
+            });
+
+            lineChart.data.datasets = appData.trackers.map((t, i) => {
+                const dataPoints = sortedDates.map(dateStr => {
+                    if (dateStr === appData.currentDate) return t.current;
+                    const entry = t.history.find(h => h.date === dateStr);
+                    return entry ? entry.value : 0;
+                });
+
+                return {
+                    label: t.name,
+                    data: dataPoints,
+                    borderColor: getColor(i),
+                    backgroundColor: getColor(i).replace(')', ', 0.1)'),
+                    tension: 0.3,
+                    fill: false
+                };
+            });
+
+            lineChart.update();
+        }
+
+        init();
+    </script>
+</body>
+
+</html>
