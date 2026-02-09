@@ -9,21 +9,32 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --primary: #6366f1;
-            --secondary: #a855f7;
-            --bg: #0f172a;
-            --glass: rgba(255, 255, 255, 0.05);
-            --glass-border: rgba(255, 255, 255, 0.1);
-            --text: #f8fafc;
+            --army-green: #4b5320;
+            --dark-khaki: #556b2f;
+            --brown: #3e3526;
+            --beige: #a5a58d;
+            --black-green: #1a1c16;
+
+            --primary: #78866b;
+            --secondary: #4a5d23;
+            --bg: #1a1c16;
+            --glass: rgba(30, 35, 25, 0.7);
+            --glass-border: rgba(165, 165, 141, 0.2);
+            --text: #e2e2d5;
+            --accent: #d4a373;
         }
 
         body {
             font-family: 'Segoe UI', system-ui, sans-serif;
             background-color: var(--bg);
+            /* Camouflage Pattern approximation using gradients */
             background-image:
-                radial-gradient(at 0% 0%, hsla(253, 16%, 7%, 1) 0, transparent 50%),
-                radial-gradient(at 50% 0%, hsla(225, 39%, 30%, 1) 0, transparent 50%),
-                radial-gradient(at 100% 0%, hsla(339, 49%, 30%, 1) 0, transparent 50%);
+                radial-gradient(circle at 10% 20%, #4b5320 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, #3e3526 0%, transparent 20%),
+                radial-gradient(circle at 50% 50%, #556b2f 0%, transparent 30%),
+                radial-gradient(circle at 20% 80%, #2f3521 0%, transparent 20%),
+                radial-gradient(circle at 80% 10%, #5b4830 0%, transparent 20%);
+            background-size: 100% 100%;
             color: var(--text);
             margin: 0;
             padding: 20px;
@@ -43,37 +54,44 @@
 
         .card {
             background: var(--glass);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             border: 1px solid var(--glass-border);
-            border-radius: 20px;
+            border-radius: 4px;
+            /* More angular/rugged */
             padding: 24px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
             transition: transform 0.2s;
         }
 
         .card:hover {
             transform: translateY(-2px);
+            border-color: var(--primary);
         }
 
         h1,
         h2 {
             margin: 0 0 15px 0;
-            font-weight: 600;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         h1 {
             font-size: 2rem;
-            background: linear-gradient(to right, #818cf8, #c084fc);
+            background: linear-gradient(to right, #a5a58d, #d4a373);
+            background-clip: text;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             margin-bottom: 5px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
         }
 
         .date-display {
-            color: #94a3b8;
+            color: #8a8a7a;
             font-size: 0.9rem;
             margin-bottom: 20px;
+            font-family: monospace;
         }
 
         /* Input Section */
@@ -84,35 +102,45 @@
         }
 
         input {
-            background: rgba(0, 0, 0, 0.2);
+            background: rgba(0, 0, 0, 0.4);
             border: 1px solid var(--glass-border);
-            color: white;
+            color: #e2e2d5;
             padding: 12px;
-            border-radius: 12px;
+            border-radius: 4px;
             width: 100%;
             font-size: 1rem;
             outline: none;
             transition: all 0.3s;
+            font-family: monospace;
         }
 
         input:focus {
             border-color: var(--primary);
-            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+            background: rgba(0, 0, 0, 0.6);
+            box-shadow: 0 0 0 1px var(--primary);
         }
 
         button {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            border: none;
-            color: white;
+            background: linear-gradient(to bottom, #556b2f, #3b4d21);
+            border: 1px solid #2f3a1a;
+            color: #e2e2d5;
             padding: 12px 24px;
-            border-radius: 12px;
+            border-radius: 4px;
             cursor: pointer;
-            font-weight: 600;
-            transition: opacity 0.2s;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         }
 
         button:hover {
-            opacity: 0.9;
+            background: linear-gradient(to bottom, #607935, #455a27);
+            transform: translateY(-1px);
+        }
+
+        button:active {
+            transform: translateY(1px);
         }
 
         /* Stats */
@@ -120,25 +148,33 @@
             font-size: 2.5rem;
             font-weight: 700;
             margin: 10px 0;
+            color: #d4a373;
+            /* Accent color */
         }
 
         .stat-label {
-            color: #94a3b8;
-            font-size: 0.9rem;
+            color: #8a8a7a;
+            font-size: 0.8rem;
+            text-transform: uppercase;
         }
 
         /* Progress Bar */
         .progress-container {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 999px;
-            height: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 2px;
+            height: 12px;
             margin-top: 15px;
             overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.05);
         }
 
         .progress-bar {
             height: 100%;
-            background: linear-gradient(90deg, #38bdf8, #818cf8);
+            background: repeating-linear-gradient(45deg,
+                    #556b2f,
+                    #556b2f 10px,
+                    #4b5320 10px,
+                    #4b5320 20px);
             width: 0%;
             transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
         }
@@ -163,7 +199,7 @@
             <h1>Günlük Analiz</h1>
             <div class="date-display" id="currentDate"></div>
             <button onclick="openModal()"
-                style="position: absolute; top: 20px; right: 20px; padding: 10px 15px; font-size: 1.2rem; border-radius: 50%; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center;">+</button>
+                style="position: absolute; top: 20px; right: 20px; padding: 0; font-size: 1.5rem; border-radius: 50%; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; background: var(--primary);">+</button>
         </div>
 
         <!-- Tracker Cards Area -->
@@ -295,26 +331,29 @@
                 card.innerHTML = `
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <h2>${tracker.name}</h2>
-                        <button onclick="removeTracker(${index})" style="background:none; color:#dc2626; padding:5px; font-size:0.8rem;">Sil</button>
+                        <button onclick="removeTracker(${index})" style="background:none; color:#8b0000; padding:5px; font-size:0.8rem; border:none; box-shadow:none;">Sil</button>
                     </div>
                     <div class="input-group">
                         <input type="number" id="input-${index}" placeholder="Miktar" step="1">
                         <button onclick="updateTracker(${index})">Ekle</button>
                     </div>
                     
-                    <div class="stat-value">${tracker.current} <span style="font-size:1rem;color:#94a3b8;">${tracker.unit}</span></div>
-                    <div style="display:flex; justify-content:space-between; font-size:0.9rem; color:#94a3b8;">
+                    <div class="stat-value">${tracker.current} <span style="font-size:1rem;color:#9ca38f;">${tracker.unit}</span></div>
+                    <div style="display:flex; justify-content:space-between; font-size:0.9rem; color:#9ca38f;">
                         <span>Hedef: ${tracker.target} ${tracker.unit}</span>
                         <span>Ortalama (7 gün): ${avg}</span>
                     </div>
                     
                     <div class="progress-container">
-                        <div class="progress-bar" style="width: ${percentage}%; background: hsl(${index * 60 + 200}, 70%, 60%);"></div>
+                        <div class="progress-bar" style="width: ${percentage}%; background: repeating-linear-gradient(45deg, ${getColor(index)}, ${getColor(index)} 10px, #2f3521 10px, #2f3521 20px);"></div>
                     </div>
                 `;
                 trackerContainer.appendChild(card);
             });
         }
+
+        const camoColors = ['#4b5320', '#556b2f', '#3e3526', '#a5a58d', '#6b8c42', '#5b4830'];
+        const getColor = (i) => camoColors[i % camoColors.length];
 
         function updateTracker(index) {
             const input = document.getElementById(`input-${index}`);
@@ -404,7 +443,7 @@
         }
 
         function updateCharts() {
-            const getColor = (i) => `hsl(${i * 60 + 200}, 70%, 60%)`;
+            // Global getColor used
 
             // Bar Chart
             barChart.data.labels = appData.trackers.map(t => t.name);
@@ -460,6 +499,5 @@
         init();
     </script>
 </body>
-
 
 </html>
